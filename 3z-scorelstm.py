@@ -135,7 +135,7 @@ Y=[]
 Z=[]
 lossAll = []
 minNum =100
-epoch = 10
+epoch = 50
 for ep in range(epoch):
     print ep
     for i in range(len(data)):
