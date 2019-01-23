@@ -50,15 +50,15 @@ def testMSE():
     with open('CMAPSSData/test_FD001.txt') as inp:
         for line in inp.readlines():
             line = line.split()
-            if int(line[0])==92:
+            if int(line[0])==run:
                 oneData.append(map(eval,line))
-            elif int(line[0])==93:
+            else: #if int(line[0])==93:
                 testdata.append(oneData)
                 oneData=[]
                 oneData.append(map(eval,line))
                 run=int(line[0])
                 #if run==3:
-                break
+                #    break
         testdata.append(oneData)
 
     print 'test',len(testdata),len(testdata[0])
@@ -90,50 +90,63 @@ def testMSE():
     sequenceX = []
     sequenceY = []
     for i in range(len(testdata)):
+        dataXX = []
+        dataYY = []
+        dataAA = []
         sequenceX = []
         sequenceY = []
         seqAxis = []
         for j in range(len(testdata[i])):
             x = testdata[i][j][1:]
-            #y = testrul[0]+len(testdata[i])-testdata[i][j][0]
-            y =20+len(testdata[i])-testdata[i][j][0]
+            y = testrul[i]+len(testdata[i])-testdata[i][j][0]
+            #y =20+len(testdata[i])-testdata[i][j][0]
             seqAxis.append(y)          
             y = y if y<130 else 130
             sequenceX.append(x)
             sequenceY.append(y)
             if j>sequence_len-2:
-                dataX.append(copy.deepcopy(sequenceX))
-                dataY.append(copy.deepcopy(sequenceY))
-                dataAxis.append(copy.deepcopy(seqAxis))
+                dataXX.append(copy.deepcopy(sequenceX))
+                dataYY.append(copy.deepcopy(sequenceY))
+                dataAA.append(copy.deepcopy(seqAxis))
                 sequenceX.pop(0)
                 sequenceY.pop(0)
                 seqAxis.pop(0)
-    print len(dataX),len(dataY),len(dataAxis),len(dataX[0])   
+        dataX.append(copy.deepcopy(dataXX))
+        dataY.append(copy.deepcopy(dataYY))
+        dataAxis.append(copy.deepcopy(dataAA))
+         
+    print len(dataX),len(dataY),len(dataAxis),len(dataX[0]),len(dataY[0]),len(dataAxis[0])   
     
     X=[]
     Y=[]
     Z=[]
     lossAll = []
-    for (x,y,axis) in zip(dataX,dataY,dataAxis):
-        x = torch.FloatTensor(x)
-        prediction = net(Variable(x))
-        #print prediction
-        print axis
-        X.append(axis)
-        Y.append(y)
-        Z.append(prediction.detach().numpy())
-        lossAll.append(y-prediction.detach().numpy())
+    for i in range(100):
+        X=[]
+        Y=[]
+        Z=[]
+        lossAll = []
+        for (x,y,axis) in zip(dataX[i],dataY[i],dataAxis[i]):
+            x = torch.FloatTensor(x)
+            prediction = net(Variable(x))
+            #print prediction
+            #print axis
+            X.append(axis)
+            Y.append(y)
+            Z.append(prediction.detach().numpy())
+            lossAll.append(y-prediction.detach().numpy())
 
-    lossAll = np.asarray(lossAll)
-    res = 0
-    for x in lossAll:
-        res = res+pow(x,2)
-    print len(lossAll),res/len(lossAll)
-    plt.scatter(X, Y, s=15)
-    plt.scatter(X, Z, s=15)
-    plt.xlim(-10, 300)
-    plt.ylim(-10, 300)
-    plt.show()
-    
+        lossAll = np.asarray(lossAll)
+        res = 0
+        for x in lossAll:
+            res = res+pow(x,2)
+        print i,len(lossAll),np.sum(res/len(lossAll))/len(res)
+      
+        plt.scatter(X, Y, s=15)
+        plt.scatter(X, Z, s=15)
+        plt.xlim(-10, 300)
+        plt.ylim(-10, 300)
+        plt.show()
+
     
 testMSE()
