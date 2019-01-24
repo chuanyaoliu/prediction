@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
-import torch.nn.functional as F     # 激励函数都在这
+import torch.nn.functional as F    
 from torch.autograd import Variable
 
 
