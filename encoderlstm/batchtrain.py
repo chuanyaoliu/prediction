@@ -57,8 +57,8 @@ testloader = Data.DataLoader(
     num_workers=2,              # 多线程来读数据
 )
 
-net = Net(1, 300, sequence_len,batch_size)
-#net = torch.load('./model130/model_batch21.pkl')
+#net = Net(1, 300, sequence_len,batch_size)
+net = torch.load('./model130/model_batch15.pkl')
 optimizer = torch.optim.SGD(net.parameters(), lr=0.001)  
 loss_func = torch.nn.MSELoss()   
 

@@ -36,7 +36,7 @@ def readFile(filename):
                 oneData.append(map(eval,line))
                 run=int(line[0])
                 #if run==5:
-                 #   break
+                #    break
         data.append(oneData)
     print filename,len(data),len(data[0])
     return data

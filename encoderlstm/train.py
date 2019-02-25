@@ -27,9 +27,24 @@ testdata = selectFeature(testdata,maxNum,minNum)
 testrul = readrul('CMAPSSData/RUL_FD001.txt')
 testdataX,testdataY,testdataAxis = makeUpSeq(testdata,sequence_len,testrul)
 
-#net = Net(1, 300, sequence_len,batch_size)
-net = torch.load('./model130/model_epoch004.pkl')
-optimizer = torch.optim.SGD(net.parameters(), lr=0.00001)  
+#net = Net(3, 300, sequence_len,batch_size)
+#net = torch.load('./model130/model_epoch004.pkl')
+net = torch.load('./modelNew/model_epoch29.pkl')
+#net = torch.load('./modelNew/model3_epoch18.pkl')
+#optimizer = torch.optim.SGD(net.parameters(), lr=0.001)  
+
+conv5_params = list(map(id, net.encoder.parameters()))
+base_params = filter(lambda p: id(p) not in conv5_params,
+                     net.parameters())
+conv5_params = list(map(id, net.decoder.parameters()))
+base_params = filter(lambda p: id(p) not in conv5_params,
+                     base_params)
+optimizer = torch.optim.SGD([
+            {'params': base_params},
+            {'params': net.encoder.parameters(), 'lr': 0.000001},
+            {'params': net.decoder.parameters(), 'lr': 0.000001}],
+            lr=0.000001,momentum=0.9)  
+           
 loss_func = torch.nn.MSELoss()   
 
 def testMSE(dataX,dataY,dataAxis):
@@ -59,7 +74,7 @@ def testMSE(dataX,dataY,dataAxis):
     plt.show()
     '''
 #testMSE(testdataX,testdataY,testdataAxis)   
-for ep in range(100):
+for ep in range(40):
     print ep
     i = 0
     X=[]
@@ -72,13 +87,14 @@ for ep in range(100):
         y = torch.FloatTensor(y)
         
         encoded,decoded,prediction = net(Variable(x))   
-        loss1 = loss_func(prediction,y)
-        loss2 = loss_func(decoded,x)*100
+        loss1 = loss_func(prediction,y)/10
+        loss2 = loss_func(decoded,x)*1000
         loss = loss1+loss2
         optimizer.zero_grad()  
         loss.backward()        
         optimizer.step()
         i=i+1 
+        
         if i%1000==0:
             print i,loss1,loss2
             
@@ -88,12 +104,13 @@ for ep in range(100):
         E.append(encoded.detach().numpy()[-1])
         lossAll.append(y.detach().numpy()[-1]-prediction.detach().numpy()[-1])
     res = 0
+
     for x in lossAll:
         res = res+pow(x,2)
     print 'train',len(lossAll),pow(res/len(lossAll),0.5)
     testMSE(testdataX,testdataY,testdataAxis)
     if ep%1==0:
-        model_name = "./model130/model_epoch00"+str(ep+5)+".pkl"
+        model_name = "./modelNew/model3_epoch"+str(ep+19)+".pkl"
         torch.save(net, model_name)
         print model_name,"has been saved"
         #plt.scatter(X, Y,s=10)

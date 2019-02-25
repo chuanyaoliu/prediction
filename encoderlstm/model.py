@@ -4,14 +4,14 @@ class Net(torch.nn.Module):
     def __init__(self, n_feature, n_hidden, sequence_len,batch_size):
         super(Net, self).__init__()   
         self.encoder = nn.Sequential(
-            nn.Linear(16, 5),
+            nn.Linear(16, 8),
             nn.Tanh(),
-            nn.Linear(5, 1),   
+            nn.Linear(8, n_feature),   
         )
         self.decoder = nn.Sequential(
-            nn.Linear(1, 5),
+            nn.Linear(n_feature, 8),
             nn.Tanh(),
-            nn.Linear(5, 16),
+            nn.Linear(8, 16),
             nn.Sigmoid(),       # compress to a range (0, 1)
         )
         self.hidden_linear = torch.nn.Linear(n_hidden, 50)
