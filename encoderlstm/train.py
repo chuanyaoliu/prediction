@@ -27,9 +27,9 @@ testdata = selectFeature(testdata,maxNum,minNum)
 testrul = readrul('CMAPSSData/RUL_FD001.txt')
 testdataX,testdataY,testdataAxis = makeUpSeq(testdata,sequence_len,testrul)
 
-#net = Net(3, 300, sequence_len,batch_size)
+net = Net(1, 300, sequence_len,batch_size)
 #net = torch.load('./model130/model_epoch004.pkl')
-net = torch.load('./modelNew/model_epoch29.pkl')
+#net = torch.load('./modelNew/model_epoch29.pkl')
 #net = torch.load('./modelNew/model3_epoch18.pkl')
 #optimizer = torch.optim.SGD(net.parameters(), lr=0.001)  
 
@@ -41,9 +41,9 @@ base_params = filter(lambda p: id(p) not in conv5_params,
                      base_params)
 optimizer = torch.optim.SGD([
             {'params': base_params},
-            {'params': net.encoder.parameters(), 'lr': 0.000001},
-            {'params': net.decoder.parameters(), 'lr': 0.000001}],
-            lr=0.000001,momentum=0.9)  
+            {'params': net.encoder.parameters(), 'lr': 0.00001},
+            {'params': net.decoder.parameters(), 'lr': 0.00001}],
+            lr=0.00001,momentum=0.9)  
            
 loss_func = torch.nn.MSELoss()   
 
@@ -87,8 +87,8 @@ for ep in range(40):
         y = torch.FloatTensor(y)
         
         encoded,decoded,prediction = net(Variable(x))   
-        loss1 = loss_func(prediction,y)/10
-        loss2 = loss_func(decoded,x)*1000
+        loss1 = loss_func(prediction,y)
+        loss2 = loss_func(decoded,x)*100
         loss = loss1+loss2
         optimizer.zero_grad()  
         loss.backward()        
@@ -110,8 +110,8 @@ for ep in range(40):
     print 'train',len(lossAll),pow(res/len(lossAll),0.5)
     testMSE(testdataX,testdataY,testdataAxis)
     if ep%1==0:
-        model_name = "./modelNew/model3_epoch"+str(ep+19)+".pkl"
-        torch.save(net, model_name)
+        model_name = "./modelNew/model3_epoch"+str(ep)+".pkl"
+        #torch.save(net, model_name)
         print model_name,"has been saved"
         #plt.scatter(X, Y,s=10)
         #plt.scatter(X, Z,s=10)
