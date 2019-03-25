@@ -9,8 +9,10 @@ def findMaxMin(filename):
     data = []
     oneData=[]
     maxNum = [0 for i in range(26)]
-    minNum = [100, 1, 0.0008, 0.0004, 100.0, 518.67, 642.36, 1583.23, 1396.84, 14.62, 21.61, 553.97, 2387.96, 9062.17, 1.30, 47.30, 522.31, 2388.01, 8145.32, 8.4246, 0.03, 391, 2388, 100.0, 39.11, 23.3537]
     #minNum = [100, 362, 0.0087, 0.0006, 100.0, 518.67, 644.53, 1616.91, 1441.49, 14.62, 21.61, 556.06, 2388.56, 9244.59, 1.3, 48.53, 523.38, 2388.56, 8293.72, 8.5848, 0.03, 400, 2388, 100.0, 39.43, 23.6184]
+    #minNum = [100, 1, 34.9983, 0.8400, 100.0, 449.44, 555.32, 1358.61, 1137.23, 5.48, 8.00,194.64, 2222.65, 8341.91, 1.02, 42.02, 183.06, 2387.72, 8048.56, 9.3461, 0.02, 334, 2223, 100.0, 14.73, 8.8071]
+    #minNum = [100, 1, 0.0008, 0.0004, 100.0, 518.67, 642.36, 1583.23, 1396.84, 14.62, 21.61, 553.97, 2387.96, 9062.17, 1.30, 47.30, 522.31, 2388.01, 8145.32, 8.4246, 0.03, 391, 2388, 100.0, 39.11, 23.3537]
+    minNum = [1, 1, 42.0049, 0.8400, 100.0, 445.00, 549.68, 1343.43, 1112.93, 3.91, 5.70, 137.36, 2211.86, 8311.32, 1.01, 41.69, 129.78, 2387.99, 8074.83, 9.3335, 0.02, 330, 2212 ,100.00, 10.62, 6.3670]
     with open(filename) as inp:
         for line in inp.readlines():
             line = line.split()
@@ -73,8 +75,8 @@ def selectFeature(data,maxNum,minNum):
         minNum[1]=0
         maxNum[1]=1
         data[x]= (data[x]-minNum)/(maxNum-minNum)
-        data[x] = data[x][:,[1,2,3,6,7,8,11,12,13,15,16,17,18,19,21,24,25]]
-        #data[x] = data[x][:,[1,6,7,8,11,13,15,16,18]]
+        #data[x] = data[x][:,[1,2,3,6,7,8,11,12,13,15,16,17,18,19,21,24,25]]
+        data[x] = data[x][:,1:]
 
     return data
 def selectFeature2(data,meanNum,stdNum):
@@ -181,7 +183,7 @@ def makeUpSeqTest2(data,sequence_len,rul=[]):
                 
     print len(dataX),len(dataY),len(dataX[0])
     return dataX,dataY,dataAxis
-def makeUpSeq3(dataX,dataY,dataAxis,sequence_len,rul=[]):
+def makeUpSeqTest3(data,sequence_len,rul=[]):
     dataX = []
     dataY = []
     dataAxis = []
@@ -199,13 +201,18 @@ def makeUpSeq3(dataX,dataY,dataAxis,sequence_len,rul=[]):
             y = y if y<130 else 130
             sequenceX.append(x)
             sequenceY.append(y)
-            if j>sequence_len-2:
-                dataX.append(copy.deepcopy(sequenceX))
-                dataY.append(copy.deepcopy(sequenceY))
-                dataAxis.append(copy.deepcopy(seqAxis))
+            if len(sequenceX)>30:                
                 sequenceX.pop(0)
                 sequenceY.pop(0)
                 seqAxis.pop(0)
+        while len(sequenceX)<30:
+            sequenceX.insert(0,sequenceX[0])
+            sequenceY.insert(0,sequenceY[0])
+            seqAxis.insert(0,seqAxis[0])
+        if len(sequenceX)==30:
+            dataX.append(copy.deepcopy(sequenceX))
+            dataY.append(copy.deepcopy(sequenceY))
+            dataAxis.append(copy.deepcopy(seqAxis))
     print len(dataX),len(dataY),len(dataX[0])
     return dataX,dataY,dataAxis
 def makeUpSeq2(autoencoder,data,sequence_len,rul=[]):
