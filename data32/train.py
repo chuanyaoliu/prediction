@@ -19,9 +19,9 @@ batch_size = 1
 a = [0,1,0,0,0,0,0.3,0.2,0.5,0,0,0.6,0.1,0.1,0,0.4,0.5,0.8,0.2,0.3,0,0.4,0,0,0.9,0.7]
 a = np.asarray(a)
 print [a[i] for i in[6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,24,25]]
-maxNum,minNum = findMaxMin2('CMAPSSData/train_FD002.txt')
-
-data = readFile('CMAPSSData/train_FD002.txt')
+maxNum,minNum = findMaxMin2('CMAPSSData/train_FD004.txt')
+#print maxNum,minNum
+data = readFile('CMAPSSData/train_FD004.txt')
 data = selectFeature2(data,maxNum,minNum)
 '''
 for jj in range(26):
@@ -42,15 +42,15 @@ for jj in range(26):
 '''
 
 dataX,dataY,dataAxis = makeUpSeq(data,sequence_len)
-
-testdata = readFile('CMAPSSData/test_FD002.txt')
+data = None
+testdata = readFile('CMAPSSData/test_FD004.txt')
 testdata = selectFeature2(testdata,maxNum,minNum)
-testrul = readrul('CMAPSSData/RUL_FD002.txt')
+testrul = readrul('CMAPSSData/RUL_FD004.txt')
 testdataX,testdataY,testdataAxis = makeUpSeqTest3(testdata,sequence_len,testrul)
-
-net = Net(3, 300, sequence_len,batch_size)
+testdata = None
+#net = Net(3, 300, sequence_len,batch_size)
 #net = torch.load('./model/model_elstm27.pkl')
-#net = torch.load('./modelZ/model_epoch0.pkl')
+net = torch.load('./model/data4_epoch0.pkl')
 #net = torch.load('./modelNew/model3_epoch18.pkl')
 
 optimizer = torch.optim.SGD(net.parameters(), lr=0.00001)  
@@ -72,20 +72,22 @@ loss_func = torch.nn.MSELoss()
 def testMSE(dataX,dataY,dataAxis):
     i=0
     res=0
+    score=0
     for (x,y,axis) in zip(dataX,dataY,dataAxis):
         x = torch.FloatTensor(x)
         encoded,decoded,prediction = net(Variable(x),False)
         loss = loss_func(prediction[-1],torch.FloatTensor(y)[-1])
         i+=1
         res+= loss.detach().numpy() 
+        score+= calScore(prediction[-1],y[-1])
         '''
         if i%2000==0:
             print i,prediction,y
             print 'test',pow(res/i,0.5)
         '''
-    print 'test',pow(res/i,0.5)
+    print 'test',pow(res/i,0.5),score
     
-#testMSE(testdataX,testdataY,testdataAxis)   
+testMSE(testdataX,testdataY,testdataAxis)   
 for ep in range(40):
     print ep
     i = 0
@@ -103,12 +105,12 @@ for ep in range(40):
         optimizer.step()
         i=i+1 
         res+=loss1.detach().numpy() 
-        if i%4000==0:
+        if i%5000==0:
             print i,loss1,loss2,prediction,y
             print 'train',pow(res/i,0.5)
             
     print 'train',pow(res/i,0.5)
-    model_name = "./model/model_epoch"+str(ep)+".pkl"
+    model_name = "./model/data4_epoch"+str(ep+1)+".pkl"
     torch.save(net, model_name)
     print model_name,"has been saved"
     testMSE(testdataX,testdataY,testdataAxis)

@@ -6,6 +6,7 @@ import copy
 import pandas as pd
 import numpy as np
 import torch
+import math
 import torch.nn as nn
 import matplotlib.pyplot as plt
 import torch.nn.functional as F    
@@ -16,16 +17,16 @@ from model import Net
 sequence_len=30
 batch_size = 1
 
-maxNum,minNum = findMaxMin('CMAPSSData/train_FD003.txt')
+maxNum,minNum = findMaxMin2('CMAPSSData/train_FD002.txt')
 
 
-testdata = readFile('CMAPSSData/test_FD003.txt')
-testdata = selectFeature(testdata,maxNum,minNum)
-testrul = readrul('CMAPSSData/RUL_FD003.txt')
-testdataX,testdataY,testdataAxis = makeUpSeqTest(testdata,sequence_len,testrul)
+testdata = readFile('CMAPSSData/test_FD002.txt')
+testdata = selectFeature2(testdata,maxNum,minNum)
+testrul = readrul('CMAPSSData/RUL_FD002.txt')
+testdataX,testdataY,testdataAxis = makeUpSeqTest3(testdata,sequence_len,testrul)
 
 #net = Net(1, 300, sequence_len,batch_size)
-net = torch.load('./model/best_17.5.pkl')
+net = torch.load('./model/data2.pkl')
 #net = torch.load('./modelZ/model_epoch0.pkl')
 #net = torch.load('./modelNew/model3_epoch18.pkl')
 
@@ -45,19 +46,38 @@ optimizer = torch.optim.SGD([
 '''           
 loss_func = torch.nn.MSELoss()   
 
+def calScore(pre,y):
+    d = pre-y
+    if d<0:
+        res=math.exp(-d/13)
+    else:
+        res=math.exp(d/10)   
+    return res
 def testMSE(dataX,dataY,dataAxis):
     i=0
     res=0
+    score=0
+    x1=[]
+    x2=[]
+    x3=[]
     for (x,y,axis) in zip(dataX,dataY,dataAxis):
         x = torch.FloatTensor(x)
-        encoded,decoded,prediction = net(Variable(x))
-        loss = loss_func(prediction,torch.FloatTensor(y))
+        encoded,decoded,prediction = net(Variable(x),False)
+        loss = loss_func(prediction[-1],torch.FloatTensor(y)[-1])
         i+=1
+        score+= calScore(prediction[-1],y[-1])
         res+= loss.detach().numpy() 
+        x1.append(i)
+        x2.append(prediction[-1])
+        x3.append(y[-1])
         if i%100==0:
             print i,prediction,y
-            print 'test',pow(res/i,0.5)
-    print 'test',pow(res/i,0.5)      
+            print 'test',pow(res/i,0.5),score
+    plt.plot(x1,x2)
+    plt.plot(x1,x3)
+    plt.legend('py')
+    #plt.show()
+    print 'test',pow(res/i,0.5) ,score   
           
 
     

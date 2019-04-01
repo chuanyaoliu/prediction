@@ -27,8 +27,8 @@ def dataview(filename):
                 oneData=[]
                 oneData.append(map(eval,line))
                 run=int(line[0])
-                if run==2:
-                    break
+                #if run==2:
+                 #   break
         data.append(oneData)
 
     print 'train',len(data),len(data[0])
@@ -61,7 +61,7 @@ def dataview(filename):
         plt.show()
 
 
-dataview('CMAPSSData/train_FD002.txt')
+dataview('CMAPSSData/train_FD004.txt')
 
 maxNum,minNum = findMaxMin2('CMAPSSData/train_FD002.txt')
 data = readFile('CMAPSSData/train_FD002.txt')
