@@ -4,7 +4,7 @@ import pdb
 import sys
 import copy
 import pandas as pd
-import xlrd
+
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -12,9 +12,9 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 import os
 from datetime import datetime
-import xlrd
-from xlrd import xldate_as_tuple
-import matplotlib.pyplot as plt
+#import xlrd
+#from xlrd import xldate_as_tuple
+#import matplotlib.pyplot as plt
 from scipy.io import loadmat
 def readmat(path):
     cap = []
@@ -62,7 +62,7 @@ def readXLSX(path):
     lastdate = '2010-10-18 16:22:33'
     for file in files:
         if not os.path.isdir(file): 
-            print path+file
+            print (path+file)
             workbook = xlrd.open_workbook(path+file)
             print(workbook.sheet_names())
             if len(workbook.sheet_names())<3:
@@ -125,9 +125,11 @@ def makeUpNasa(cap,T1,seqLen):
     data = []
     x = []
     for i in range(len(cap)):
-        x.append([cap[i],T1[i]])
+        x.append(cap[i])
+        x.append(T1[i])
         if i>seqLen-2:
             data.append(x[:])
+            x.pop(0)
             x.pop(0)
 
     return data
@@ -170,7 +172,7 @@ def makeUpSeq2(data,maxNum,minNum,seqLen):
             dataY.append(y[:])
             x.pop(0)
             y.pop(0)
-    print len(dataX),len(dataY),len(dataX[10])
+    print (len(dataX),len(dataY),len(dataX[10]))
     return dataX,dataY   
 def makeUpSeq3(data,maxNum,minNum,seqLen):
     data = np.asarray(data)

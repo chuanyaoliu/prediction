@@ -4,7 +4,6 @@ import pdb
 import sys
 import copy
 import pandas as pd
-import xlrd
 import numpy as np
 import torch
 import math
@@ -16,7 +15,7 @@ from model2 import Net
 
 path = './nasa/B0006.mat'
 cap,T1,X = readmat(path)
-print len(X),len(cap),len(T1)
+print (len(X),len(cap),len(T1))
 maxcap = max(cap)
 cap = [float(x)/maxcap for x in cap]
 maxT1 = max(T1)
@@ -73,19 +72,19 @@ for j in range(len(dataX)):
 
 #net = Net(12, 50, sequence_len,batch_size)
 #net = torch.load('./model/lstm_loss990.pkl')
-net = torch.load('./model/model_epoch2000.pkl')
-optimizer = torch.optim.SGD(net.parameters(), lr=0.0001)  
-loss_func = torch.nn.MSELoss() 
+#net = torch.load('./model/model_epoch2000.pkl')
+#optimizer = torch.optim.SGD(net.parameters(), lr=0.0001)  
+#loss_func = torch.nn.MSELoss() 
 
-cricle = 70
+cricle = 60
 def test():
-    a = -0.341
-    b = -28.1
-    c = 2.000
-    d = -0.00336
-    n = 0.997
-    b1 = -0.3
-    b2=5
+    a = 0.5781
+    b = -0.0031
+    c = 0.4205
+    d = -0.0027
+    n = 0.9928
+    b1 = 0.0787
+    b2=0.0759
     X = []
     Y = []
     Z = []
@@ -96,50 +95,54 @@ def test():
     last = torch.FloatTensor([cap[0],T1[0]])
     last2 = torch.FloatTensor([cap[0],T1[0]])
     for (x,y) in zip(cap[1:],T1[1:]):
-        prediction = net(last,True) 
-        prediction2 = net(last2,True) 
+       # prediction = net(last,True) 
+       # prediction2 = net(last2,True) 
         ca = torch.FloatTensor([x])
         if i<cricle:
-            ck = x*maxcap
-            t = y*maxT1/24
+            ck = x
+            t = y*maxT1
+            if t!=0:
+                pre = n*ck+b1*math.exp(-b2/(t))
+            else:
+                pre = n*ck
             last = torch.FloatTensor([x,y])
             last2 = torch.FloatTensor([x,y])
             X.append(i)
-            Y.append(prediction.detach().numpy()[0]*maxcap)    
-            Y1.append(x*maxcap)  
-            Y2.append(a*math.exp(b*i)+c*math.exp(d*i))#x*maxcap) 
+            #Y.append(prediction.detach().numpy()[0]*maxcap)    
+            Y1.append(pre*maxcap)  
+            Y2.append((a*math.exp(b*i)+c*math.exp(d*i))*maxcap) 
             Z.append(x*maxcap)
         else:
             if t!=0:
-                pre = n*ck+b1*math.exp(-b2/t)
+                pre = n*ck+b1*math.exp(-b2/(t))
             else:
                 pre = n*ck
-            ck = pre
-            t = y*maxT1/24
-            pre2 = a*math.exp(b*(i-1))+c*math.exp(d*(i-1))
-            last = torch.FloatTensor([pre2/maxcap,y]) 
-            last2 = torch.FloatTensor([prediction2[0],y]) 
+            ck = x
+            t = y*maxT1
+            pre2 = a*math.exp(b*i)+c*math.exp(d*i)
+            #last = torch.FloatTensor([pre2/maxcap,y]) 
+            #last2 = torch.FloatTensor([prediction2[0],y]) 
             X.append(i)
-            Y.append(prediction.detach().numpy()[0]*maxcap)   
-            Y1.append(prediction2.detach().numpy()[0]*maxcap) 
-            Y2.append(pre2)
+            #Y.append(prediction.detach().numpy()[0]*maxcap)   
+            Y1.append(pre*maxcap) 
+            Y2.append(pre2*maxcap)
             Z.append(x*maxcap)
-            loss = loss_func(prediction*maxcap,ca*maxcap)
-            res+=loss.detach().numpy() 
+            #loss = loss_func(prediction*maxcap,ca*maxcap)
+            #res+=loss.detach().numpy() 
         i+=1
-    print 'test',pow(res/(i-cricle),1)
+    print('test',pow(res/(i-cricle),1))
         
     #plt.scatter(X, Y, s=15)
     #plt.scatter(X, Z, s=15)
-    plt.plot(X,Y)
+    #plt.plot(X,Y)
     plt.plot(X,Y1)
     plt.plot(X,Y2)
     plt.plot(X, Z)
     plt.show()
 test()
-
+'''
 for ep in range(10000):
-    print ep
+    print(ep)
     i = 1
     res = 0
     X = []
@@ -163,12 +166,12 @@ for ep in range(10000):
         optimizer.step()
         res+=loss.detach().numpy() 
         
-    print 'train',pow(res/i,1)
+    print ('train',pow(res/i,1))
 
     if ep!=0 and ep%1000==0:
         model_name = "./model/model_epoch"+str(ep)+".pkl"
         torch.save(net, model_name)
-        print model_name,"has been saved"  
+        print( model_name,"has been saved"  )
         
         plt.scatter(X, Y, s=15)
         #plt.scatter(X, Z, s=15)
@@ -176,7 +179,7 @@ for ep in range(10000):
         plt.plot(X, Z)
         plt.show()
         test()
-        
+'''        
 
 
 

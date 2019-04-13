@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import matplotlib.pyplot as plt
+from torch.autograd import grad
 from util import  *
 from model2 import Net 
 # torch.manual_seed(1)       # reproducible
@@ -9,7 +10,7 @@ from model2 import Net
 
 # Hyper Parameters
 BATCH_SIZE = 64
-LR_G = 0.00001       # learning rate for generator
+LR_G = 0.001       # learning rate for generator
 LR_D = 0.001       # learning rate for discriminator
 N_IDEAS = 5         # think of this as number of ideas for generating an art work(Generator)
 ART_COMPONENTS = 70 # it could be total point G can drew in the canvas
@@ -25,32 +26,37 @@ def artist_works():    # painting from the famous artist (real target)
     
 path = './nasa/B0006.mat'
 cap,T1,X = readmat(path)
-print len(X),len(cap),len(T1)
+print(len(X),len(cap),len(T1))
 maxcap = max(cap)
 cap = [float(x)/maxcap for x in cap]
+
 maxT1 = max(T1)
 T1 = [float(x)/maxT1 for x in T1]
 
-sequence_len = 10
+sequence_len = 9
 batch_size = 1
 data = makeUpNasa(cap,T1,sequence_len)
-print len(data),len(data[0])
+print(len(data),len(data[0]))
 
 #batchcap = torch.FloatTensor([[cap[1:71],T1[1:71]]for i in range(BATCH_SIZE)])
 #batchinput = torch.FloatTensor([[cap[0:70],T1[0:70]] for i in range(BATCH_SIZE)])
 
 G = nn.Sequential(                  # Generator
-    nn.Linear(2, 50),        # random ideas (could from normal distribution)
+    nn.Linear(20, 128),        # random ideas (could from normal distribution)
     nn.ReLU(),
-    
-    nn.Linear(50, 1), # making a painting from these random ideas
+    nn.Linear(128, 24),        # random ideas (could from normal distribution)
+    nn.ReLU(),
+    nn.Linear(24, 1), # making a painting from these random ideas
+    nn.Sigmoid(),  
 )
-
+predict = nn.Linear(2,18)   
 D = nn.Sequential(                  # Discriminator
-    nn.Linear(10, 128), # receive art work either from the famous artist or a newbie like G
+    nn.Linear(36, 128), 
     nn.ReLU(),
-    nn.Linear(128, 1),
-    #nn.Sigmoid(),                   # tell the probability that the art work is made by artist
+    nn.Linear(128, 24),
+    nn.ReLU(),
+    nn.Linear(24, 1),
+    #nn.Sigmoid(),                   
 )
 
 #net = Net(12, 50, 30,1)
@@ -71,38 +77,50 @@ for step in range(10000):
     Y = []
     Z = []
     i = 1
-    for line in data[1:40]:
-        G_ideas = torch.randn(10, 2)
-        G_paintings = G(G_ideas).view(-1)    
-
-        Y.append(G_paintings.detach().numpy()[-1])
-        Z.append(line[-1][0])
+    if i%800==0:
+        LR_G/=2
+        LR_D/=2
+    for line in data[1:]:
+        G_ideas = torch.cat((last,torch.randn(2)))
+        fake = G(G_ideas)
+        fake_input = torch.cat((fake,torch.FloatTensor([line[-1]])))
+        fake_input = predict(fake_input)
+        fake_input = torch.cat((last,fake_input))
+        Y.append(fake.detach().numpy())
+        Z.append(line[-2])
         X.append(i)
         i+=1
         
         
         last = torch.FloatTensor(line)
-        
-        pre = []
-        Dinput = []
-        for (a,b) in zip(G_paintings,line):
-            pre.append(a)
-            pre.append(b[1])
-            Dinput.append(b[0])
-            
-           
-        
-        Dinput = torch.FloatTensor(Dinput)
-        prob_artist0 = D(Dinput)         # D try to increase this prob
-        prob_artist1 = D(G_paintings)              # D try to reduce this prob
+        real = torch.FloatTensor([last[-2],last[-1]])
+        real = predict(real)
+        real_input = torch.cat((last,real))
+        prob_artist0 = D(real_input)         # D try to increase this prob
+        prob_artist1 = D(fake_input)              # D try to reduce this prob
 
         #D_loss = - torch.mean(torch.log(prob_artist0) + torch.log(1. - prob_artist1))
         #G_loss = torch.mean(torch.log(1. - prob_artist1))
         #G_loss = loss_func(G_paintings,torch.FloatTensor([x]))
-        D_loss = - torch.mean((prob_artist0) - prob_artist1)
+        D_loss = -torch.mean(prob_artist0 - prob_artist1)
         G_loss = torch.mean( - prob_artist1)
         
-        #G_loss_history.append(G_loss)
+        alpha = torch.rand(1)
+
+        x_hat = alpha *last[-2] + (1 - alpha) *fake
+        x_hat = torch.cat((x_hat,torch.FloatTensor([line[-1]])))
+        x_hat = predict(x_hat)
+        x_hat = torch.cat((last,x_hat))
+
+        pred_hat = D(x_hat)
+
+        gradients = grad(outputs=pred_hat, inputs=x_hat, grad_outputs=torch.ones(pred_hat.size()),
+                         create_graph=True, retain_graph=True, only_inputs=True)[0]
+
+        gradient_penalty = 10 * ((gradients.view(1, -1).norm(2, 1) - 1) ** 2).mean()
+
+        D_loss = D_loss  + gradient_penalty
+
         
         opt_D.zero_grad()
         D_loss.backward(retain_graph=True)    # reusing computational graph
@@ -113,18 +131,16 @@ for step in range(10000):
             opt_G.step()
 
     if step % 10 == 0:  # plotting
-        print step,D_loss,G_loss,prob_artist0,prob_artist1
+        print( step,D_loss,G_loss,prob_artist0,prob_artist1)
         plt.cla()
         plt.plot(X,Z, c='#4AD631', lw=3, label='Generated painting',)
         plt.plot(X,Y , c='#74BCFF', lw=3, label='upper bound')
-        plt.text(-1, 1, 'D accuracy=%.2f (0.5 for D to converge)' % prob_artist0.data.numpy().mean(), fontdict={'size': 13})
-        plt.text(-1, 0.95, 'D score= %.2f (-1.38 for G to converge)' % -D_loss.data.numpy(), fontdict={'size': 13})
+        plt.text(-1,0.96, 'D accuracy=%.2f (0.5 for D to converge)' % prob_artist0.data.numpy().mean(), fontdict={'size': 13})
+        plt.text(-1, 0.84, 'D score= %.2f (-1.38 for G to converge)' % -D_loss.data.numpy(), fontdict={'size': 13})
         #plt.ylim((0.9, 1.1));
         plt.legend(loc='upper right', fontsize=10);
         plt.draw();plt.pause(0.01)
         
 plt.ioff()
 plt.show()
-torch.save(G, './G.pkl')
-torch.save(D, './D.pkl')
 print('model has been saved')
