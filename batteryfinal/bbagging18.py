@@ -14,7 +14,7 @@ from torch.autograd import Variable
 from util import  *
 from model2 import Net 
 
-path = './nasa/B0006.mat'
+path = './nasa/B0018.mat'
 cap,T1,X = readmat(path)
 print (len(X),len(cap),len(T1))
 maxcap = max(cap)
@@ -73,7 +73,7 @@ for j in range(len(dataX)):
 
 #net = Net(12, 50, sequence_len,batch_size)
 #net = torch.load('./model/lstm_loss990.pkl')
-net = torch.load('./model6/60annB0006.pkl')
+net = torch.load('./model18/60ann4000.pkl')
 optimizer = torch.optim.SGD(net.parameters(), lr=0.01)  
 loss_func = torch.nn.MSELoss() 
 '''
@@ -84,27 +84,25 @@ D = nn.Sequential(                  # Discriminator
     nn.ReLU()               
 )
 '''
-D = torch.load('./model6/ganAD9950.pkl')
-predict = torch.load('./model6/ganApre9950.pkl')
+D = torch.load('./model18/ganAD9950.pkl')
+predict = torch.load('./model18/ganApre9950.pkl')
 opt_D = torch.optim.SGD(D.parameters(), lr=0.1)
+   
 
 cricle = 60
 if cricle ==60:
-    a = 0.1477
+    a = 0.3978
     b = -0.0019
-    c = 0.8919
-    d = -0.0049
-    n = 0.9953
-    b1 = 0.1641
-    b2=0.9023
+    c = 0.6952
+    d = -0.0056
 if cricle ==70:
-    a = 0.1077
+    a = 0.3978
     b = -0.0019
-    c = 0.8699
-    d = -0.0039
-    n = 0.9963
-    b1 = 0.1641
-    b2=0.9023
+    c = 0.6952
+    d = -0.0056
+n = 0.9959
+b1 = 0.1641
+b2=0.9023
 def test():
     X = []
     X2=[]
@@ -132,7 +130,6 @@ def test():
         if i<cricle:
             ck = x*maxcap
             t = y*maxT1/float(24)
-            
             if len(d_input)>16:
                 d_input.pop(0)
                 d_input.pop(0)
@@ -142,7 +139,6 @@ def test():
                 d_input.append(x)
                 d_input.append(y)
             
-                
             last = torch.FloatTensor([x,y])
             last2 = torch.FloatTensor([x,y])
             X.append(i)
@@ -165,13 +161,13 @@ def test():
             else:
                 d_input.append(prediction.detach().numpy()[0])
                 d_input.append(y)
-            
                 
             real = torch.FloatTensor([prediction,y])
             
             real_input = torch.cat((torch.FloatTensor(d_input),predict(real)))
             output1 = D(real_input)
             
+                
             if len(d_input)>16:
                 d_input.pop(0)
                 d_input.pop(0)
@@ -225,54 +221,17 @@ def test():
             res+=loss.detach().numpy() 
         i+=1
     print('test')
-    print('test',pow(res/(i-cricle),1),pow(res/(i-cricle),0.5))
+    print('test',pow(res/(i-cricle),1))
 
     #plt.scatter(X, Y, s=15)
     #plt.scatter(X, Y1, s=15)
-    if cricle==70:
-        plt.plot(X,Z, label='real capacity',color= '#FF7F00')
-        plt.plot(X2,Y,label='ann model',color='#377EB8')
-        plt.plot(X2,Y1,label='Fusion model', color= '#984EA3')
-        plt.plot(X2,Y2,label='Empirical model',color='#4DAF4A')
-        plt.plot(X2,Y3, label='Empirical model2',color='darkgreen')
-        plt.legend(loc='upper right', fontsize=10);
-        plt.hlines(1.4, 0,175 , color='darkgrey', linestyles = "dashed")
-        plt.vlines(70, 1.2,2 , color='k')
-        plt.vlines(118, 1.2,1.6 , color='#377EB8')  
-        plt.text(118, 1.62, r'118', fontsize=10)
-        plt.vlines(110, 1.2,1.6 , color='darkgreen')  
-        plt.text(110, 1.55, r'110', fontsize=10)
-        plt.vlines(106, 1.2,1.6 , color='#984EA3')
-        plt.text(95, 1.55, r'106', fontsize=10)
-        plt.vlines(96, 1.2,1.6 , color='#4DAF4A')
-        plt.text(92, 1.62, r'96', fontsize=10)
-        plt.vlines(108, 1.2,1.6 , color='#FF7F00')
-        plt.text(105, 1.62, r'108', fontsize=10)
-        #plt.xlim(0,175)
-        #plt.ylim(1.2,2)
-        plt.show()
-    elif cricle==60:
-        plt.plot(X,Z, label='real capacity',color= '#FF7F00')
-        plt.plot(X2,Y,label='ann model',color='#377EB8')
-        plt.plot(X2,Y1,label='Fusion model', color= '#984EA3')
-        plt.plot(X2,Y2,label='Empirical model',color='#4DAF4A')
-        plt.plot(X2,Y3, label='Empirical model2',color='darkgreen')
-        plt.legend(loc='upper right', fontsize=10);
-        plt.hlines(1.4, 0,175 , color='darkgrey', linestyles = "dashed")
-        plt.vlines(60, 1.2,2 , color='k')
-        #plt.vlines(140, 1.2,1.6 , color='#377EB8')  
-        #plt.text(140, 1.55, r'140', fontsize=10)
-        plt.vlines(105, 1.2,1.6 , color='darkgreen')  
-        plt.text(101, 1.62, r'105', fontsize=10)
-        plt.vlines(104, 1.2,1.6 , color='#984EA3')
-        plt.text(94, 1.55, r'104', fontsize=10)
-        plt.vlines(94, 1.2,1.6 , color='#4DAF4A')
-        plt.text(90, 1.62, r'95', fontsize=10)
-        plt.vlines(108, 1.2,1.6 , color='#FF7F00')
-        plt.text(108, 1.55, r'108', fontsize=10)
-        #plt.xlim(0,175)
-        #plt.ylim(1.2,2)
-        plt.show()
+    plt.plot(X2,Y,label='ann model')
+    plt.plot(X2,Y1,label='Fusion model')
+    plt.plot(X2,Y2,label='Empirical model')
+    plt.plot(X2,Y3, label='Empirical model2',color='darkgreen')
+    plt.plot(X,Z)
+    plt.legend(loc='upper right', fontsize=10);
+    plt.show()
     return None
 test()
 

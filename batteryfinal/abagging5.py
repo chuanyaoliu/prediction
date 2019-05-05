@@ -87,12 +87,8 @@ D = nn.Sequential(                  # Discriminator
 D = torch.load('./model5/ganAD9950.pkl')
 predict = torch.load('./model5/ganApre9950.pkl')
 opt_D = torch.optim.SGD(D.parameters(), lr=0.1)
-def softmax(x,y):
-    temp = abs(x)+abs(y)
-    return abs(y)/temp,abs(x)/temp
-    
 
-cricle = 60
+cricle = 70
 if cricle ==60:
     a = 0.0417
     b = -0.0083
@@ -100,12 +96,16 @@ if cricle ==60:
     d = -0.0034
 if cricle ==70:
     a = 0.0417
-    b = -0.043
+    b = -0.063
     c = 1.0690
     d = -0.0030
+
 n = 0.9928
 b1 = 0.0787
 b2=0.0759
+n = 0.9959
+b1 = 0.1641
+b2=0.9023
 def test():
     X = []
     X2 = []
@@ -113,12 +113,12 @@ def test():
     Z = []
     Y1 = []
     Y2 =[]
+    Y3=[]
     i=1
     res=0
     last = torch.FloatTensor([cap[0],T1[0]])
     last2 = torch.FloatTensor([cap[0],T1[0]])
     d_input = []
-    d_input2 = []
     for (x,y) in zip(cap[1:],T1[1:]):
         prediction = net(last,True) 
         prediction2 = net(last2,True) 
@@ -131,12 +131,8 @@ def test():
         '''
         ca = torch.FloatTensor([x])
         if i<cricle:
-            ck = x
-            t = y*maxT1
-            if t!=0:
-                pre = n*ck+b1*math.exp(-b2/(t))
-            else:
-                pre = n*ck
+            ck = x*maxcap
+            t = y*maxT1/float(24)
             if len(d_input)>16:
                 d_input.pop(0)
                 d_input.pop(0)
@@ -145,29 +141,19 @@ def test():
             else:
                 d_input.append(x)
                 d_input.append(y)
-            if len(d_input2)>16:
-                d_input2.pop(0)
-                d_input2.pop(0)
-                d_input2.append(x)
-                d_input2.append(y)
-            else:
-                d_input2.append(x)
-                d_input2.append(y)
                 
             last = torch.FloatTensor([x,y])
             last2 = torch.FloatTensor([x,y])
             X.append(i)
-           
             Z.append(x*maxcap)
         else:
-            
             if t!=0:
                 pre = n*ck+b1*math.exp(-b2/(t))
             else:
                 pre = n*ck
-            ck = x
-            t = y*maxT1
-       
+            ck = pre
+            t = y*maxT1/float(24)
+
             if len(d_input)>16:
                 d_input.pop(0)
                 d_input.pop(0)
@@ -176,28 +162,49 @@ def test():
             else:
                 d_input.append(prediction.detach().numpy()[0])
                 d_input.append(y)
-            if len(d_input2)>16:
-                d_input2.pop(0)
-                d_input2.pop(0)
-                d_input2.append(pre2)
-                d_input2.append(y)
-            else:
-                d_input2.append(pre2)
-                d_input2.append(y)
                 
             real = torch.FloatTensor([prediction,y])
             
             real_input = torch.cat((torch.FloatTensor(d_input),predict(real)))
-            output2 = D(real_input)
+            output1 = D(real_input)
+            
+                
+            if len(d_input)>16:
+                d_input.pop(0)
+                d_input.pop(0)
+                d_input.append(pre2)
+                d_input.append(y)
+            else:
+                d_input.append(pre2)
+                d_input.append(y)
+                
             
             real = torch.FloatTensor([pre2,y])
             real = predict(real)
-            real_input = torch.cat((torch.FloatTensor(d_input2),real))
-            output1 = D(real_input)
-
-            w1,w2 = softmax(output1.detach().numpy()[0],output2.detach().numpy()[0])
-            print(w1,w2)
-            fusion = prediction.detach().numpy()[0]*w1+pre2*w2
+            real_input = torch.cat((torch.FloatTensor(d_input),real))
+            output2 = D(real_input)
+            
+            
+            if len(d_input)>16:
+                d_input.pop(0)
+                d_input.pop(0)
+                d_input.append(pre)
+                d_input.append(y)
+            else:
+                d_input.append(pre)
+                d_input.append(y)
+                
+            
+            real = torch.FloatTensor([pre/maxcap,y])
+            real = predict(real)
+            real_input = torch.cat((torch.FloatTensor(d_input),real))
+            output3 = D(real_input)
+            
+            
+            
+            w = softmax([output1.detach().numpy()[0],output2.detach().numpy()[0],output3.detach().numpy()[0]])
+            print(w)
+            fusion = prediction.detach().numpy()[0]*w[2]+pre2*w[1]+pre/maxcap*w[0]
             last = torch.FloatTensor([prediction.detach().numpy()[0],y]) 
             last2 = torch.FloatTensor([fusion,y]) 
             X.append(i)
@@ -206,11 +213,12 @@ def test():
                 print(i)
             
             Y.append(prediction.detach().numpy()[0]*maxcap)   
-            Y1.append(prediction2.detach().numpy()[0]*maxcap)
+            Y1.append(fusion*maxcap)
             Y2.append(pre2*maxcap)
+            Y3.append(pre)
             Z.append(x*maxcap)
             
-            loss = loss_func( prediction2*maxcap,ca*maxcap)
+            loss = loss_func( torch.FloatTensor([fusion])*maxcap,ca*maxcap)
             res+=loss.detach().numpy() 
         i+=1
     print('test')
@@ -223,11 +231,14 @@ def test():
         plt.plot(X2,Y,label='ann model',color='#377EB8')
         plt.plot(X2,Y1,label='Fusion model', color= '#984EA3')
         plt.plot(X2,Y2,label='Empirical model',color='#4DAF4A')
+        plt.plot(X2,Y3, label='Empirical model2',color='darkgreen')
         plt.legend(loc='upper right', fontsize=10);
         plt.hlines(1.4, 0,175 , color='darkgrey', linestyles = "dashed")
         plt.vlines(70, 1.2,2 , color='k')
         plt.vlines(139, 1.2,1.6 , color='#377EB8')  
         plt.text(140, 1.55, r'139', fontsize=10)
+        plt.vlines(129, 1.2,1.6 , color='darkgreen')  
+        plt.text(129, 1.62, r'129', fontsize=10)
         plt.vlines(125, 1.2,1.6 , color='#984EA3')
         plt.text(125.5, 1.55, r'125', fontsize=10)
         plt.vlines(117, 1.2,1.6 , color='#4DAF4A')
@@ -242,13 +253,16 @@ def test():
         plt.plot(X2,Y,label='ann model',color='#377EB8')
         plt.plot(X2,Y1,label='Fusion model', color= '#984EA3')
         plt.plot(X2,Y2,label='Empirical model',color='#4DAF4A')
+        plt.plot(X2,Y3, label='Empirical model2',color='darkgreen')
         plt.legend(loc='upper right', fontsize=10);
         plt.hlines(1.4, 0,175 , color='darkgrey', linestyles = "dashed")
         plt.vlines(60, 1.2,2 , color='k')
         plt.vlines(140, 1.2,1.6 , color='#377EB8')  
         plt.text(140, 1.55, r'140', fontsize=10)
-        plt.vlines(121, 1.2,1.6 , color='#984EA3')
-        plt.text(114, 1.55, r'121', fontsize=10)
+        plt.vlines(130, 1.2,1.6 , color='darkgreen')  
+        plt.text(130, 1.62, r'130', fontsize=10)
+        plt.vlines(125, 1.2,1.6 , color='#984EA3')
+        plt.text(125, 1.55, r'125', fontsize=10)
         plt.vlines(114, 1.2,1.6 , color='#4DAF4A')
         plt.text(104, 1.55, r'114', fontsize=10)
         plt.vlines(124, 1.2,1.6 , color='#FF7F00')
