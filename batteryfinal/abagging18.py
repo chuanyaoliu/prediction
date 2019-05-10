@@ -89,7 +89,7 @@ predict = torch.load('./model18/ganApre9950.pkl')
 opt_D = torch.optim.SGD(D.parameters(), lr=0.1)
    
 
-cricle = 60
+cricle = 70
 if cricle ==60:
     a = 0.3978
     b = -0.0019
@@ -243,6 +243,7 @@ def test():
         plt.text(95, 1.62, r'97', fontsize=10)
         plt.vlines(90, 1.2,1.6 , color='#4DAF4A')
         plt.text(87, 1.62, r'90', fontsize=10)
+        plt.vlines(95.7, 1.2,1.6 , color='#984EA3')
         plt.vlines(96, 1.2,1.6 , color='#FF7F00')
         plt.text(91, 1.55, r'96', fontsize=10)
         #plt.xlim(0,175)
@@ -261,8 +262,8 @@ def test():
         plt.text(102, 1.62, r'102', fontsize=10)
         plt.vlines(98, 1.2,1.6 , color='darkgreen')  
         plt.text(98, 1.55, r'98', fontsize=10)
-        plt.vlines(97, 1.2,1.6 , color='#984EA3')
-        plt.text(94, 1.62, r'97', fontsize=10)
+        plt.vlines(96.3, 1.2,1.6 , color='#984EA3')
+        #plt.text(94, 1.62, r'97', fontsize=10)
         plt.vlines(90, 1.2,1.6 , color='#4DAF4A')
         plt.text(87, 1.62, r'90', fontsize=10)
         plt.vlines(96, 1.2,1.6 , color='#FF7F00')
