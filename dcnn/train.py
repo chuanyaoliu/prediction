@@ -13,7 +13,32 @@ from torch.autograd import Variable
 from util import * 
 from cnn import Net 
 
-filename = 'FD002'
+
+
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+import numpy as np
+ 
+''' 
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ 
+ 
+ax.scatter(-0.8872,  0.5771,  0.5440)
+ax.scatter(  0.1473,  1.1259, -0.2291)
+ax.scatter(-0.6157,  0.4774, -1.1102)
+ax.scatter(  0.4373, -0.0682,  1.5442)
+ax.scatter(1.3546,  0.1592, -0.4990)
+ax.scatter(-0.2813, -1.3465, -0.1079)
+ax.set_xlabel('X Label')
+ax.set_ylabel('Y Label')
+ax.set_zlabel('Z Label')
+ 
+plt.show()
+
+'''
+
+filename = 'FD004'
 sequence_len=30
 batch_size = 1
 '''
@@ -24,6 +49,20 @@ print [a[i] for i in[6,7,8,10,11,12,13,14,15,16,17,18,19,20,21,24,25]]
 maxNum,minNum = findMaxMin2('CMAPSSData/train_%s.txt' % filename)
 #print maxNum,minNum
 data = readFile('CMAPSSData/train_%s.txt'% filename)
+'''
+for jj in range(16):
+    X=[]
+    Y=[]
+    for x in range(len(data)):
+        for i in range(len(data[x])):
+            X.append(data[x][i][1])
+            Y.append(data[x][i][jj])
+    plt.scatter(X, Y, s=15)
+    #plt.scatter(X, Z, s=15)
+    #plt.xlim(-10, 300)
+    #plt.ylim(-10, 300)
+    plt.show()
+'''
 data,condition = selectFeature2(data,maxNum,minNum)
 print len(data),len(data[0]),len(condition),len(condition[0])
 '''
@@ -35,7 +74,7 @@ for jj in range(26):
         stdNum = np.std(data[x],axis=0)
         for i in range(len(data[x])):
             X.append(data[x][i][0])
-            Y.append(condition[x][i][jj])
+            Y.append(data[x][i][jj])
         
     plt.scatter(X, Y, s=15)
     #plt.scatter(X, Z, s=15)
@@ -52,11 +91,13 @@ testdata,conditiontest = selectFeature2(testdata,maxNum,minNum)
 testrul = readrul('CMAPSSData/RUL_%s.txt'% filename)
 testdataX,testdataY,testdataAxis = makeUpSeq2(testdata,sequence_len,testrul)
 testdata = None
-net = Net(17,4, 300, sequence_len,batch_size)
+net = Net(17,3, 300, sequence_len,batch_size)
 #net = torch.load('./model/model_elstm27.pkl')
-#net = torch.load('./model/data4_epoch301.pkl')
+#net = torch.load('./model/data4_epoch2401.pkl')
+#print net.condition_embeds(torch.LongTensor([0,1,2,3,4,5]))
+
 #net = torch.load('./modelNew/model3_epoch18.pkl')
-learning_rate = 0.0001
+learning_rate = 0.001
 optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)  
 '''
 conv5_params = list(map(id, net.encoder.parameters()))
@@ -77,6 +118,9 @@ def testMSE(dataX,dataY,dataAxis,condition):
     i=0
     res=0
     score=0
+    X=[]
+    Y=[]
+    Z=[]
     for (x,y,axis,c) in zip(dataX,dataY,dataAxis,condition):
         x = torch.FloatTensor(x)
         c = torch.LongTensor(c)
@@ -84,15 +128,28 @@ def testMSE(dataX,dataY,dataAxis,condition):
         loss = loss_func(prediction[-1],torch.FloatTensor(y)[-1])
         i+=1
         res+= loss.detach().numpy() 
-        score+= calScore(prediction[-1],y[-1])
+        score+= calScore(prediction.detach().numpy().tolist()[-1],y[-1])
         '''
         if i%2000==0:
             print i,prediction,y
             print 'test',pow(res/i,0.5)
         '''
+        #X=[]
+        #for xx in range(len(prediction)):
+        #    X.append(xx)
+        #plt.scatter(X, prediction.detach().numpy().tolist(),s=10)
+        #plt.plot(X, y[18:])
+        #plt.show()
+        X.append(i)
+        Y.append(prediction.detach().numpy().tolist()[-1])
+        Z.append(y[-1])
+    plt.plot(X, Y)
+    plt.plot(X, Z)
+    #plt.plot(X,E)
+    #plt.show()
     print 'test',pow(res/i,0.5),score
     
-#testMSE(testdataX,testdataY,testdataAxis)   
+#testMSE(testdataX,testdataY,testdataAxis,conditiontest)   
 for ep in range(40000):
     i = 0
     res = 0
@@ -101,7 +158,7 @@ for ep in range(40000):
         y = torch.FloatTensor(y)
         c = torch.LongTensor(c)
         prediction = net(Variable(x),Variable(c),True) 
-
+        #print net.condition_embeds(c)
         loss1 = loss_func(prediction,y[18:])
         #print loss1,loss2
         optimizer.zero_grad()  
