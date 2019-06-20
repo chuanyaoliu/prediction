@@ -38,7 +38,7 @@ plt.show()
 
 '''
 
-filename = 'FD004'
+filename = 'FD002'
 sequence_len=30
 batch_size = 1
 '''
@@ -61,6 +61,9 @@ for jj in range(16):
     #plt.scatter(X, Z, s=15)
     #plt.xlim(-10, 300)
     #plt.ylim(-10, 300)
+    plt.xlabel('Cycle')
+    plt.tick_params(direction='in')
+    plt.savefig('560.png', dpi=800)
     plt.show()
 '''
 data,condition = selectFeature2(data,maxNum,minNum)
@@ -80,6 +83,9 @@ for jj in range(26):
     #plt.scatter(X, Z, s=15)
     #plt.xlim(-10, 300)
     #plt.ylim(-10, 300)
+    plt.xlabel('Cycle')
+    plt.tick_params(direction='in')
+    plt.savefig('560.png', dpi=800)
     plt.show()
 '''
 
@@ -91,13 +97,13 @@ testdata,conditiontest = selectFeature2(testdata,maxNum,minNum)
 testrul = readrul('CMAPSSData/RUL_%s.txt'% filename)
 testdataX,testdataY,testdataAxis = makeUpSeq2(testdata,sequence_len,testrul)
 testdata = None
-net = Net(17,3, 300, sequence_len,batch_size)
-#net = torch.load('./model/model_elstm27.pkl')
-#net = torch.load('./model/data4_epoch2401.pkl')
+#net = Net(17,3, 300, sequence_len,batch_size)
+net = torch.load('./model/a_data2_multi3.pkl')
+#net = torch.load('./model/data4_epoch201.pkl')
 #print net.condition_embeds(torch.LongTensor([0,1,2,3,4,5]))
 
 #net = torch.load('./modelNew/model3_epoch18.pkl')
-learning_rate = 0.001
+learning_rate = 0.00001
 optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate)  
 '''
 conv5_params = list(map(id, net.encoder.parameters()))
@@ -134,22 +140,46 @@ def testMSE(dataX,dataY,dataAxis,condition):
             print i,prediction,y
             print 'test',pow(res/i,0.5)
         '''
-        #X=[]
-        #for xx in range(len(prediction)):
-        #    X.append(xx)
-        #plt.scatter(X, prediction.detach().numpy().tolist(),s=10)
-        #plt.plot(X, y[18:])
-        #plt.show()
-        X.append(i)
-        Y.append(prediction.detach().numpy().tolist()[-1])
-        Z.append(y[-1])
-    plt.plot(X, Y)
-    plt.plot(X, Z)
-    #plt.plot(X,E)
-    #plt.show()
-    print 'test',pow(res/i,0.5),score
+        X=[]
+        print i
+        if i in (45,70,76,103,116,138,158,159,185):
+            for xx in range(len(prediction)):
+                X.append(xx)
+            plt.scatter(X, prediction.detach().numpy().tolist(),s=15,label="Predicted RUL")
+            plt.plot(X, y[18:],label="Actual RUL")
+            plt.legend(loc='upper right', fontsize=10);
+            plt.tick_params(direction='in')
+            plt.xlabel('Time Cycle')
+            plt.ylabel('RUL')
+            plt.savefig('570.png', dpi=800)
+            plt.show()
+        #X.append(i)
+        #Y.append(prediction.detach().numpy().tolist()[-1])
+        #Z.append(y[-1])
     
-#testMSE(testdataX,testdataY,testdataAxis,conditiontest)   
+    def sortAll(pre,true):
+        length = len(true)
+        for i in range(1,length):
+            for j in range(0,i):
+                if true[i-j]<true[i-j-1]:
+                    temp = true[i-j]
+                    true[i-j] = true[i-j-1]
+                    true[i-j-1] = temp
+                    temp = pre[i-j]
+                    pre[i-j] = pre[i-j-1]
+                    pre[i-j-1] = temp
+    #sortAll(Y,Z)
+    #plt.plot(X, Y)
+    #plt.plot(X, Z)
+    #plt.plot(X,E)
+    #plt.tick_params(direction='in')
+    #plt.xlabel('Cycle')
+    #plt.ylabel('Capacity/Ahr')
+    #plt.savefig('570.jpg', dpi=300)
+    print 'test',pow(res/i,0.5),score
+    #plt.show()
+    
+testMSE(testdataX,testdataY,testdataAxis,conditiontest)   
 for ep in range(40000):
     i = 0
     res = 0

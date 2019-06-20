@@ -2,6 +2,7 @@ import scipy.io as scio
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import random
 from cnn import Net 
 import torch
 import torch.nn.functional as F  
@@ -30,7 +31,8 @@ for i in data['mill'][0]: #(167,13)  1,1,1,1,1,1,1,9000,9000,9000,9000,9000,9000
     #print i[0][0][0],i[1],i[2],i[3],i[4],i[5],i[6]
     #for j in i[9][3000:6000]:
     #    allAC[(i[0][0][0]-1)].append(j[0])
-    
+    if i[0][0][0]==1 and (i[1][0][0]==16 or i[1][0][0]==17):
+        continue
     if i[0][0][0]==7 and i[1][0][0]==8:
         continue
     if i[0][0][0]==12 and i[1][0][0]==1:
@@ -67,7 +69,7 @@ x.sort()
 
 for i in range(len(x)):
     y.append(i+1)
-#plt.scatter(y,x,s=10)
+#plt.scatter(y,x,s=10,label='Actual RUL' )
 #plt.xlim(0,40)
 #plt.ylim(-5,25)
 #plt.show()
@@ -154,7 +156,7 @@ def test(index,net):
     #plt.plot(X,Z,label='true' )
     #plt.legend(loc='upper right', fontsize=10);
     #plt.show()
-    return prediction.detach().numpy().tolist(),y[2:].detach().numpy().tolist()
+    return prediction.detach().numpy().tolist(),y[2:].detach().numpy().tolist(),y[:2].detach().numpy().tolist()
 def train(index):
     for ep in range(100000):
         '''
@@ -237,13 +239,22 @@ steel = [4,6,7,12,13,14,15]
 for i in range(16):
     if i==5:
         continue
-    pre, y = test(i,testmodel[i])
+    pre, y,wu = test(i,testmodel[i])
+    wu2= []
+    for x in wu:
+        wu2.append(-10)
+    ''''    
     if i in iron:
         ironprediction.extend(pre)
+        ironprediction.extend(wu2)
         irontrue.extend(y)
+        irontrue.extend(wu)
     elif i in steel:
-        steelprediction.extend(pre)
-        steeltrue.extend(y)
+    '''
+    steelprediction.extend(pre)
+    #steelprediction.extend(wu2)
+    steeltrue.extend(y)
+    #steeltrue.extend(wu)
     
     
 x1=[]
@@ -260,7 +271,7 @@ for x,y in zip(ironprediction,irontrue):
     cha = float(x)-y
     rmse+=cha*cha
     res+=abs(cha)/y
-print pow(rmse/len(irontrue),0.5),res/len(irontrue)
+#print pow(rmse/len(irontrue),0.5),res/len(irontrue)
 res=0  
 rmse=0  
 i=0
@@ -287,12 +298,21 @@ def sortAll(pre,true):
                 pre[i-j] = pre[i-j-1]
                 pre[i-j-1] = temp
                 
-sortAll(steelprediction,steeltrue)        
-#plt.plot(x1,ironprediction,label='pre' )
-#plt.plot(x1,irontrue,label='true' )
-print x2,steelprediction
-plt.scatter(x2,steelprediction,s=10 )
-plt.scatter(x2,steeltrue,s=10 )
-plt.legend(loc='upper right', fontsize=10);
+'''
+sortAll(ironprediction,irontrue) 
+plt.scatter(x1,irontrue,s=10,label='Actual RUL' )
+plt.scatter(x1,ironprediction,s=15,marker=',',label='Predicted RUL' )
+'''
+sortAll(steelprediction,steeltrue)  
+plt.scatter(x2,steeltrue,s=10,label='Actual RUL' )
+plt.scatter(x2,steelprediction,s=15,marker=',',label='Predicted RUL'  )
+
+plt.legend(loc='upper left', fontsize=10);
+plt.tick_params(direction='in')
+plt.xlabel('Increasing RUL')
+plt.ylabel('RUL')
+#plt.xlim(0,100)
+#plt.ylim(0,80)
+plt.savefig('570.jpg', dpi=800)
 plt.show()
 
